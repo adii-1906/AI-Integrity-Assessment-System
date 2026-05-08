@@ -1,0 +1,9 @@
+# Core Flask
+Flask>=2.3.0
+flask-cors>=4.0.0
+
+# Google Gemini (free tier - no extra package needed, uses built-in urllib)
+# Get API key at: https://aistudio.google.com/app/apikey
+
+# Utilities
+python-dotenv>=1.0.0

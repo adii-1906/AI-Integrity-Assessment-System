@@ -1,0 +1,23 @@
+[
+  {
+    "id": "1",
+    "title": "Eiffel Tower",
+    "content": "The Eiffel Tower is a wrought-iron lattice tower on the Champ de Mars in Paris, France. It was constructed from 1887 to 1889 as the centerpiece of the 1889 World's Fair. Named after engineer Gustave Eiffel, it stands 330 meters tall.",
+    "category": "landmarks",
+    "keywords": ["eiffel tower", "paris", "france", "gustave eiffel", "1889"]
+  },
+  {
+    "id": "2",
+    "title": "Metformin",
+    "content": "Metformin is the first-line medication for the treatment of type 2 diabetes, particularly in overweight people. It is a biguanide antihyperglycemic agent that works by decreasing glucose production in the liver.",
+    "category": "medical",
+    "keywords": ["metformin", "diabetes", "medication", "biguanide"]
+  },
+  {
+    "id": "3",
+    "title": "Cold Fusion Controversy",
+    "content": "Cold fusion is a hypothesized type of nuclear reaction that would occur at or near room temperature. The 1989 claims by Pons and Fleischmann were later found to be unreproducible, and cold fusion is not considered scientifically validated.",
+    "category": "science",
+    "keywords": ["cold fusion", "pons", "fleischmann", "nuclear", "controversy"]
+  }
+]
