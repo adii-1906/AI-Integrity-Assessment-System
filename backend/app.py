@@ -1,8 +1,3 @@
-"""
-AICES - AI Content Integrity Evaluation System
-Main Flask Application Entry Point
-"""
-
 from flask import Flask
 from flask_cors import CORS
 

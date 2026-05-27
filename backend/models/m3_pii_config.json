@@ -1,0 +1,70 @@
+{
+  "patterns": {
+    "ssn": {
+      "regex": "\\b\\d{3}[-\\s]?\\d{2}[-\\s]?\\d{4}\\b",
+      "risk_level": "critical",
+      "weight": 0.95
+    },
+    "aadhaar": {
+      "regex": "\\b[2-9]\\d{3}\\s?\\d{4}\\s?\\d{4}\\b",
+      "risk_level": "critical",
+      "weight": 0.95
+    },
+    "credit_card": {
+      "regex": "\\b(?:\\d{4}[-\\s]?){3}\\d{4}\\b",
+      "risk_level": "critical",
+      "weight": 0.98
+    },
+    "bank_account": {
+      "regex": "\\b\\d{9,18}\\b(?=.*\\baccount\\b)",
+      "risk_level": "critical",
+      "weight": 0.95
+    },
+    "passport": {
+      "regex": "\\b[A-Z]{1,2}\\d{6,9}\\b",
+      "risk_level": "high",
+      "weight": 0.8
+    },
+    "medical_rec": {
+      "regex": "\\b(?:MRN|MR|patient.?id|record.?no)[\\s:]*\\d+\\b",
+      "risk_level": "high",
+      "weight": 0.85
+    },
+    "email": {
+      "regex": "\\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}\\b",
+      "risk_level": "medium",
+      "weight": 0.5
+    },
+    "phone_us": {
+      "regex": "\\b\\(?\\d{3}\\)?[\\s\\-\\.]?\\d{3}[\\s\\-\\.]?\\d{4}\\b",
+      "risk_level": "medium",
+      "weight": 0.5
+    },
+    "phone_india": {
+      "regex": "(?:\\+91[\\s\\-]?)?[6-9]\\d{9}\\b",
+      "risk_level": "medium",
+      "weight": 0.5
+    },
+    "dob": {
+      "regex": "\\b(?:0[1-9]|1[0-2])[/\\-](?:0[1-9]|[12]\\d|3[01])[/\\-](?:19|20)\\d{2}\\b",
+      "risk_level": "medium",
+      "weight": 0.6
+    },
+    "ip_address": {
+      "regex": "\\b(?:(?:25[0-5]|2[0-4]\\d|[01]?\\d\\d?)\\.){3}(?:25[0-5]|2[0-4]\\d|[01]?\\d\\d?)\\b",
+      "risk_level": "low",
+      "weight": 0.3
+    },
+    "sensitive_kw": {
+      "regex": "\\b(?:password|passwd|api.?key|secret|token|cvv|pin|private.?key|auth.?token)\\b",
+      "risk_level": "medium",
+      "weight": 0.4
+    }
+  },
+  "risk_weights": {
+    "critical": 1.0,
+    "high": 0.7,
+    "medium": 0.4,
+    "low": 0.2
+  }
+}

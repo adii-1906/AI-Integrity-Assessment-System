@@ -1,7 +1,7 @@
 """
 AICES Evaluation Endpoint
 Main API route for content integrity analysis.
-Now includes per-module detailed AI explanations via Gemini.
+Includes per-module detailed AI explanations via LLMHandler.
 """
 
 from flask import Blueprint, request, jsonify
@@ -133,13 +133,11 @@ def evaluate_content():
 def _generate_module_detail(module_name: str, result: dict, content: str, content_type: str) -> str:
     """
     Generate a detailed AI explanation for a specific module's findings.
-    Uses Gemini to produce a rich, human-readable paragraph explanation.
     """
     score = result.get("score", 50)
     verdict = result.get("verdict", "Unknown")
     findings = result.get("findings", "No findings available.")
 
-    # Truncate content for the prompt to avoid token limits
     content_preview = content[:600] + "..." if len(content) > 600 else content
 
     prompt = f"""You are an expert AI content integrity analyst. Analyze the following module result and provide a detailed, insightful explanation in 3-5 sentences.
