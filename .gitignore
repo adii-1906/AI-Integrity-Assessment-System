@@ -7,3 +7,7 @@ __pycache__/
 node_modules/
 
 .env
+
+backend/datasets/emails.csv
+
+backend/datasets/
