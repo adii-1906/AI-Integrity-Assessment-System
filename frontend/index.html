@@ -11,7 +11,7 @@
 
 <header class="masthead">
   <div class="mast-left">AI Integrity<br/>Assessment System</div>
-  <div class="mast-center">AICES · v2.0 · 2026</div>
+  <div class="mast-center">AICES · v3.0 · 2026</div>
   <div class="mast-right">
     <span style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.12em;color:var(--muted);line-height:1.6;text-align:right">Five-Dimensional<br/>Integrity Analysis</span>
     <button class="dark-toggle" id="dark-toggle" title="Toggle dark mode">☽ Dark</button>
@@ -22,7 +22,7 @@
   <div class="project-tag"><span></span>Integrity Assessment System<span></span></div>
   <h1 class="main-title">AI<em>CES</em></h1>
   <div class="subtitle">AI Content Integrity Evaluation System</div>
-  <p class="hero-desc">Analyze AI-generated content across five integrity dimensions — Bias, Hallucination, Privacy, Explainability &amp; Deepfake — and receive a composite Integrity Index score powered by AI.</p>
+  <p class="hero-desc">Analyze AI-generated content across five integrity dimensions — Bias, Hallucination, Privacy, Explainability &amp; Deepfake — and receive a composite Integrity Index score. Now with image AI-generation detection.</p>
 </div>
 
 <nav class="tabs">
@@ -43,6 +43,9 @@
     </button>
     <button class="mode-btn" id="mode-media" data-mode="media">
       <span class="mode-icon">⬆</span> Image / Video Upload
+    </button>
+    <button class="mode-btn" id="mode-imgdf" data-mode="imgdf">
+      <span class="mode-icon">🔍</span> Image AI Detection
     </button>
   </div>
 
@@ -98,8 +101,6 @@ AICES will analyze it across five dimensions:
         <button class="type-btn" data-type="academic">Academic Writing</button>
       </div>
     </div>
-
-    <!-- Drop Zone -->
     <div class="drop-zone" id="drop-zone">
       <div class="dz-icon">⬆</div>
       <div class="dz-title">Drop Image or Video Here</div>
@@ -107,8 +108,6 @@ AICES will analyze it across five dimensions:
       <div class="dz-formats">Supported: JPEG · PNG · WebP · GIF · MP4 · MOV · AVI · WebM · Max 50MB</div>
       <input type="file" id="media-file-input" accept="image/*,video/*" style="display:none"/>
     </div>
-
-    <!-- File Preview -->
     <div class="media-preview" id="media-preview" style="display:none">
       <div class="mp-head">
         <div class="mp-info">
@@ -119,8 +118,6 @@ AICES will analyze it across five dimensions:
       </div>
       <div class="mp-thumb-wrap" id="mp-thumb-wrap"></div>
     </div>
-
-    <!-- Extracted Text Preview -->
     <div class="extracted-box" id="extracted-box" style="display:none">
       <div class="ex-head">
         <div class="ex-label">Extracted Text Preview</div>
@@ -130,7 +127,6 @@ AICES will analyze it across five dimensions:
       <div class="ex-text" id="ex-text"></div>
       <div class="ex-edit-hint">Text above is what will be evaluated. You can edit it in text mode if needed.</div>
     </div>
-
     <div class="btn-row" style="margin-top:20px">
       <button class="analyze-btn" id="media-analyze-btn">
         <span class="btn-icon">⊕</span>
@@ -140,7 +136,88 @@ AICES will analyze it across five dimensions:
     </div>
   </div>
 
-  <!-- Shared status / error / results -->
+  <!-- ── IMAGE DEEPFAKE DETECTION MODE ── -->
+  <div id="imgdf-mode-panel" style="display:none">
+    <div class="imgdf-intro">
+      <div class="imgdf-intro-title">🔍 Image AI Generation &amp; Manipulation Detection</div>
+      <p class="imgdf-intro-desc">Upload any image to detect whether it is AI-generated (Stable Diffusion, DALL-E, Midjourney, GAN) or digitally manipulated. Three independent techniques are applied — ELA, DCT, and Pixel Noise Analysis — giving a % manipulation score and a heatmap showing exactly which regions are suspicious.</p>
+      <div class="imgdf-tech-row">
+        <div class="imgdf-tech-badge" style="border-color:#b5451b;color:#b5451b">ELA<br/><span>Error Level Analysis</span></div>
+        <div class="imgdf-tech-badge" style="border-color:#c8960c;color:#c8960c">DCT<br/><span>Frequency Analysis</span></div>
+        <div class="imgdf-tech-badge" style="border-color:#4a2d7a;color:#4a2d7a">PNA<br/><span>Pixel Noise Analysis</span></div>
+      </div>
+    </div>
+
+    <!-- Drop Zone (image only) -->
+    <div class="drop-zone" id="imgdf-drop-zone">
+      <div class="dz-icon">🔍</div>
+      <div class="dz-title">Drop Image Here for AI Detection</div>
+      <div class="dz-sub">or click to browse</div>
+      <div class="dz-formats">Images only: JPEG · PNG · WebP · GIF · BMP · Max 10MB</div>
+      <input type="file" id="imgdf-file-input" accept="image/*" style="display:none"/>
+    </div>
+
+    <!-- Image Preview -->
+    <div class="media-preview" id="imgdf-preview" style="display:none">
+      <div class="mp-head">
+        <div class="mp-info">
+          <div class="mp-filename" id="imgdf-filename"></div>
+          <div class="mp-meta" id="imgdf-meta"></div>
+        </div>
+        <button class="mp-remove" id="imgdf-remove">✕ Remove</button>
+      </div>
+      <div class="mp-thumb-wrap" id="imgdf-thumb-wrap"></div>
+    </div>
+
+    <div class="btn-row" style="margin-top:20px">
+      <button class="analyze-btn" id="imgdf-scan-btn" style="background:var(--violet)">
+        <span class="btn-icon">🔍</span>
+        <span class="btn-text">Scan for AI Generation</span>
+      </button>
+      <button class="clear-btn" id="imgdf-clear-btn">✕ Clear</button>
+    </div>
+
+    <!-- Deepfake Results Panel -->
+    <div id="imgdf-results" style="display:none;margin-top:32px;border-top:2px solid var(--violet);padding-top:32px">
+
+      <!-- Verdict Header -->
+      <div class="imgdf-verdict-header" id="imgdf-verdict-header">
+        <div class="imgdf-pct-box">
+          <div class="imgdf-pct" id="imgdf-pct">—</div>
+          <div class="imgdf-pct-label">Manipulation</div>
+        </div>
+        <div class="imgdf-verdict-body">
+          <div class="imgdf-verdict-tag" id="imgdf-verdict-tag">—</div>
+          <div class="imgdf-explanation" id="imgdf-explanation"></div>
+          <div class="imgdf-meta-row" id="imgdf-meta-row"></div>
+        </div>
+      </div>
+
+      <!-- Technique Score Cards -->
+      <div class="input-label" style="margin-top:24px">Technique Breakdown</div>
+      <div class="imgdf-tech-grid" id="imgdf-tech-grid"></div>
+
+      <!-- Heatmap + Region Grid -->
+      <div class="imgdf-visual-row">
+        <div class="imgdf-heatmap-wrap">
+          <div class="input-label">Manipulation Heatmap</div>
+          <div class="imgdf-heatmap-box" id="imgdf-heatmap-box">
+            <img id="imgdf-heatmap-img" src="" alt="ELA Heatmap" style="width:100%;display:block"/>
+          </div>
+          <div class="imgdf-heatmap-legend">Red = High Manipulation · Blue = Low · Grid = 3×3 Region Divisions</div>
+        </div>
+        <div class="imgdf-region-wrap">
+          <div class="input-label">Region Analysis — 3×3 Grid</div>
+          <div class="imgdf-region-summary" id="imgdf-region-summary"></div>
+          <div class="imgdf-region-grid" id="imgdf-region-grid"></div>
+          <div class="imgdf-region-note">Each cell = % manipulation in that region of the image</div>
+        </div>
+      </div>
+
+    </div><!-- end imgdf-results -->
+  </div><!-- end imgdf-mode-panel -->
+
+  <!-- Shared status / error / results (text+media modes) -->
   <div class="status-bar" id="status-bar">
     <div class="status-dot"></div>
     <span id="status-text">Initializing evaluation pipeline...</span>
@@ -148,13 +225,11 @@ AICES will analyze it across five dimensions:
   <div class="error-box" id="error-box"></div>
 
   <div class="results" id="results">
-    <!-- Media source badge -->
     <div class="media-source-badge" id="media-source-badge" style="display:none">
       <span class="msb-icon" id="msb-icon">📷</span>
       <span class="msb-label" id="msb-label">Evaluated from image</span>
       <span class="msb-detail" id="msb-detail"></span>
     </div>
-
     <div class="results-header">
       <div class="integrity-index-box">
         <div class="ii-num" id="ii-display">—</div>
@@ -168,23 +243,18 @@ AICES will analyze it across five dimensions:
         <div class="highlight-tags" id="highlight-tags"></div>
       </div>
     </div>
-
-    <!-- Export Buttons -->
     <div class="export-row">
       <button class="export-btn" id="export-json">⬇ Export JSON</button>
       <button class="export-btn" id="export-csv">⬇ Export CSV</button>
       <button class="export-btn" id="copy-results">⎘ Copy Summary</button>
       <button class="export-btn" id="print-report">⎙ Print Report</button>
     </div>
-
-    <!-- Radar Chart -->
     <div class="radar-section">
       <div class="radar-label">Module Score Radar</div>
       <div class="radar-wrap">
         <canvas id="radar-chart" width="340" height="280"></canvas>
       </div>
     </div>
-
     <div class="analysis-narrative" id="narrative-box" style="display:none">
       <div class="an-label">Integrity Analysis Narrative</div>
       <div class="an-text" id="narrative-text"></div>
@@ -205,15 +275,15 @@ AICES will analyze it across five dimensions:
     <div class="pipe-arrow">›</div>
     <div class="pipe-stage"><div class="pipe-box" style="border-top:3px solid var(--muted)" data-module="pre"><div class="pipe-icon">🔧</div><div class="pipe-label">Pre-processing</div><div class="pipe-sub">Tokenization<br/>OCR / Frame Extract<br/>PII Tagging</div></div></div>
     <div class="pipe-arrow">›</div>
-    <div class="pipe-stage"><div class="pipe-box" style="border-top:3px solid var(--accent)" data-module="m1"><div class="pipe-icon">⚖️</div><div class="pipe-label">M₁ Bias</div><div class="pipe-sub">WinoBias Lexicon<br/>StereoSet</div></div></div>
+    <div class="pipe-stage"><div class="pipe-box" style="border-top:3px solid var(--accent)" data-module="m1"><div class="pipe-icon">⚖️</div><div class="pipe-label">M₁ Bias</div><div class="pipe-sub">Logistic Regression<br/>WinoBias+StereoSet</div></div></div>
     <div class="pipe-arrow">›</div>
-    <div class="pipe-stage"><div class="pipe-box" style="border-top:3px solid var(--gold)" data-module="m2"><div class="pipe-icon">🧠</div><div class="pipe-label">M₂ Hallucin.</div><div class="pipe-sub">FEVER Patterns<br/>Wikipedia RAV</div></div></div>
+    <div class="pipe-stage"><div class="pipe-box" style="border-top:3px solid var(--gold)" data-module="m2"><div class="pipe-icon">🧠</div><div class="pipe-label">M₂ Hallucin.</div><div class="pipe-sub">Random Forest<br/>FEVER+Wiki RAV</div></div></div>
     <div class="pipe-arrow">›</div>
     <div class="pipe-stage"><div class="pipe-box" style="border-top:3px solid var(--violet)" data-module="m3"><div class="pipe-icon">🔒</div><div class="pipe-label">M₃ Privacy</div><div class="pipe-sub">12-Class PII<br/>Enron Validated</div></div></div>
     <div class="pipe-arrow">›</div>
-    <div class="pipe-stage"><div class="pipe-box" style="border-top:3px solid var(--green)" data-module="m4"><div class="pipe-icon">🔍</div><div class="pipe-label">M₄ Explain.</div><div class="pipe-sub">e-SNLI 18-Feature<br/>CoS-E Validated</div></div></div>
+    <div class="pipe-stage"><div class="pipe-box" style="border-top:3px solid var(--green)" data-module="m4"><div class="pipe-icon">🔍</div><div class="pipe-label">M₄ Explain.</div><div class="pipe-sub">LinearSVC<br/>e-SNLI+CoS-E</div></div></div>
     <div class="pipe-arrow">›</div>
-    <div class="pipe-stage"><div class="pipe-box" style="border-top:3px solid var(--blue)" data-module="m5"><div class="pipe-icon">🎭</div><div class="pipe-label">M₅ Deepfake</div><div class="pipe-sub">HC3 Lexicons<br/>GLTR Statistics</div></div></div>
+    <div class="pipe-stage"><div class="pipe-box" style="border-top:3px solid var(--blue)" data-module="m5"><div class="pipe-icon">🎭</div><div class="pipe-label">M₅ Deepfake</div><div class="pipe-sub">Gradient Boosting<br/>HC3+GLTR</div></div></div>
     <div class="pipe-arrow">›</div>
     <div class="pipe-stage"><div class="pipe-box" style="border-top:3px solid var(--ink);background:var(--cream)" data-module="agg"><div class="pipe-icon">📊</div><div class="pipe-label">Aggregator</div><div class="pipe-sub">Weighted<br/>Harmonic Mean<br/><strong>II Score</strong></div></div></div>
   </div>
@@ -223,13 +293,14 @@ AICES will analyze it across five dimensions:
     <div class="md-grid" id="md-grid"></div>
   </div>
   <table class="cmp-table" style="margin-top:32px">
-    <thead><tr><th>Module</th><th>Input</th><th>Methodology</th><th>Verdict Output</th><th>Dataset</th><th>Complexity</th></tr></thead>
+    <thead><tr><th>Module</th><th>Input</th><th>ML Algorithm</th><th>Dataset</th><th>Verdict Output</th><th>Complexity</th></tr></thead>
     <tbody>
-      <tr><td><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--accent);margin-right:8px;vertical-align:middle"></span>M₁ · Bias</td><td>Text</td><td>WinoBias + StereoSet lexicon matching; demographic, ideological &amp; toxicity classifiers</td><td>Neutral / Mild Bias / Biased</td><td>WinoBias, StereoSet</td><td>O(n)</td></tr>
-      <tr><td><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--gold);margin-right:8px;vertical-align:middle"></span>M₂ · Hallucination</td><td>Text</td><td>FEVER-derived patterns + Wikipedia RAV + knowledge_base.json fact checking</td><td>Factually Sound / Uncertain / Hallucination Risk</td><td>FEVER, Wikipedia</td><td>O(n·k)</td></tr>
-      <tr><td><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--violet);margin-right:8px;vertical-align:middle"></span>M₃ · Privacy</td><td>Text</td><td>12-class PII regex classifier: SSN, Aadhaar, email, phone, passport, credit card, medical</td><td>Safe / PII Detected / High Risk</td><td>Enron Email Dataset</td><td>O(n)</td></tr>
-      <tr><td><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--green);margin-right:8px;vertical-align:middle"></span>M₄ · Explainability</td><td>Text</td><td>18-feature linguistic pipeline: causal reasoning, hedging, opacity, structural coherence</td><td>Explainable / Partial / Opaque</td><td>e-SNLI, CoS-E</td><td>O(n·s)</td></tr>
-      <tr><td><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--blue);margin-right:8px;vertical-align:middle"></span>M₅ · Deepfake</td><td>Text / Image / Video</td><td>HC3 dataset lexical analysis + GLTR statistical features (TTR, sentence variance, repetition)</td><td>Authentic / Suspicious / Synthetic</td><td>HC3, GLTR</td><td>O(n)</td></tr>
+      <tr><td><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--accent);margin-right:8px;vertical-align:middle"></span>M₁ · Bias</td><td>Text</td><td><strong>Logistic Regression</strong> + TF-IDF (ngram 1-2, 10K features)</td><td>WinoBias, StereoSet</td><td>Neutral / Mild Bias / Biased</td><td>O(n)</td></tr>
+      <tr><td><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--gold);margin-right:8px;vertical-align:middle"></span>M₂ · Hallucination</td><td>Text</td><td><strong>Random Forest</strong> + TF-IDF (ngram 1-3, 20K features, 100 trees)</td><td>FEVER, Wikipedia</td><td>Factually Sound / Uncertain / Hallucination Risk</td><td>O(n·k)</td></tr>
+      <tr><td><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--violet);margin-right:8px;vertical-align:middle"></span>M₃ · Privacy</td><td>Text</td><td><strong>12-Class Regex PII Classifier</strong> (no ML — deterministic)</td><td>Enron Email Dataset</td><td>Safe / PII Detected / High Risk</td><td>O(n)</td></tr>
+      <tr><td><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--green);margin-right:8px;vertical-align:middle"></span>M₄ · Explainability</td><td>Text</td><td><strong>LinearSVC (Calibrated)</strong> + TF-IDF (ngram 1-2, 8K features)</td><td>e-SNLI, CoS-E</td><td>Explainable / Partial / Opaque</td><td>O(n·s)</td></tr>
+      <tr><td><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--blue);margin-right:8px;vertical-align:middle"></span>M₅ · Deepfake (Text)</td><td>Text</td><td><strong>Gradient Boosting</strong> + TF-IDF + 7 GLTR Statistical Features</td><td>HC3, GLTR</td><td>Authentic / Suspicious / Synthetic</td><td>O(n)</td></tr>
+      <tr><td><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--violet);margin-right:8px;vertical-align:middle"></span>M₅ · Deepfake (Image)</td><td>Image</td><td><strong>ELA + DCT + PNA</strong> (Error Level, Frequency, Noise Analysis)</td><td>ELA/JPEG theory</td><td>Authentic / Suspicious / AI-Generated</td><td>O(px)</td></tr>
     </tbody>
   </table>
 </div>
@@ -258,13 +329,13 @@ AICES will analyze it across five dimensions:
   <div class="sec-title-row" style="margin-top:32px"><span class="sec-num">§ II</span><span class="sec-title">Comparison with Existing Frameworks</span></div>
   <div class="sec-rule"></div>
   <table class="cmp-table">
-    <thead><tr><th>Framework</th><th style="text-align:center">Bias</th><th style="text-align:center">Halluc.</th><th style="text-align:center">Privacy</th><th style="text-align:center">XAI</th><th style="text-align:center">Deepfake</th></tr></thead>
+    <thead><tr><th>Framework</th><th style="text-align:center">Bias</th><th style="text-align:center">Halluc.</th><th style="text-align:center">Privacy</th><th style="text-align:center">XAI</th><th style="text-align:center">Deepfake</th><th style="text-align:center">Image AI Detect</th></tr></thead>
     <tbody>
-      <tr><td>TruthfulQA</td><td class="crossmark">✗</td><td class="checkmark">✓</td><td class="crossmark">✗</td><td class="crossmark">✗</td><td class="crossmark">✗</td></tr>
-      <tr><td>BOLD</td><td class="checkmark">✓</td><td class="crossmark">✗</td><td class="crossmark">✗</td><td class="crossmark">✗</td><td class="crossmark">✗</td></tr>
-      <tr><td>AI Fairness 360</td><td class="checkmark">✓</td><td class="crossmark">✗</td><td class="crossmark">✗</td><td class="checkmark">✓</td><td class="crossmark">✗</td></tr>
-      <tr><td>FaceForensics++</td><td class="crossmark">✗</td><td class="crossmark">✗</td><td class="crossmark">✗</td><td class="crossmark">✗</td><td class="checkmark">✓</td></tr>
-      <tr class="ours"><td><strong>AICES (Ours)</strong></td><td class="checkmark">✓</td><td class="checkmark">✓</td><td class="checkmark">✓</td><td class="checkmark">✓</td><td class="checkmark">✓</td></tr>
+      <tr><td>TruthfulQA</td><td class="crossmark">✗</td><td class="checkmark">✓</td><td class="crossmark">✗</td><td class="crossmark">✗</td><td class="crossmark">✗</td><td class="crossmark">✗</td></tr>
+      <tr><td>BOLD</td><td class="checkmark">✓</td><td class="crossmark">✗</td><td class="crossmark">✗</td><td class="crossmark">✗</td><td class="crossmark">✗</td><td class="crossmark">✗</td></tr>
+      <tr><td>AI Fairness 360</td><td class="checkmark">✓</td><td class="crossmark">✗</td><td class="crossmark">✗</td><td class="checkmark">✓</td><td class="crossmark">✗</td><td class="crossmark">✗</td></tr>
+      <tr><td>FaceForensics++</td><td class="crossmark">✗</td><td class="crossmark">✗</td><td class="crossmark">✗</td><td class="crossmark">✗</td><td class="checkmark">✓</td><td class="crossmark">✗</td></tr>
+      <tr class="ours"><td><strong>AICES v3.0 (Ours)</strong></td><td class="checkmark">✓</td><td class="checkmark">✓</td><td class="checkmark">✓</td><td class="checkmark">✓</td><td class="checkmark">✓</td><td class="checkmark">✓</td></tr>
     </tbody>
   </table>
 </div>
@@ -284,7 +355,7 @@ AICES will analyze it across five dimensions:
 
 <footer class="paper-footer">
   <span>AICES · PhD Research Project · CSE Dept.</span>
-  <span>AI Content Integrity Evaluation System · v2.0 · 2026</span>
+  <span>AI Content Integrity Evaluation System · v3.0 · 2026</span>
   <span>Dataset-Trained ML Classifiers</span>
 </footer>
 
@@ -303,14 +374,14 @@ const SAMPLES={
 };
 
 const MODULE_DETAILS={
-  input:{icon:'📥',title:'Input Layer',fields:[{label:'Supported Formats',val:'Plain text, JPEG/PNG/WebP images, MP4/MOV/AVI/WebM video files'},{label:'Max Input Size',val:'Text: unlimited · Image: 10MB · Video: 50MB'},{label:'Preprocessing',val:'Text: UTF-8 normalization · Image: PIL OCR · Video: ffmpeg frame extraction + Tesseract OCR'},{label:'Output',val:'Normalized text passed to all five evaluation modules simultaneously'}]},
-  pre:{icon:'🔧',title:'Pre-processing Module',fields:[{label:'Text',val:'Whitespace normalization, Unicode NFC, sentence segmentation'},{label:'Image OCR',val:'PIL preprocessing (contrast enhancement, grayscale) → Tesseract v5 with best-of-3 config'},{label:'Video OCR',val:'ffmpeg extracts up to 8 frames → per-frame Tesseract OCR → deduplication → combine'},{label:'PII Pre-tagging',val:'Regex preliminary scan before pipeline — email, phone, SSN patterns flagged early'}]},
-  m1:{icon:'⚖️',title:'M₁ · Bias Detection',fields:[{label:'Dataset',val:'WinoBias (github.com/uclanlp/corefBias) + StereoSet (HuggingFace)'},{label:'Method',val:'Demographic bias lexicon matching across 4 categories: gender, racial, age, socioeconomic'},{label:'Additional Checks',val:'Ideological bias keywords + toxicity regex patterns + absolutist language detection'},{label:'Output Verdicts',val:'Neutral (≥80) · Mild Bias Detected (50–79) · Biased Content (<50)'},{label:'Weight in II',val:'w₁ = 0.20'},{label:'Benchmark F1',val:'0.84 on AICES benchmark'}]},
-  m2:{icon:'🧠',title:'M₂ · Hallucination Detection',fields:[{label:'Datasets',val:'FEVER (Kaggle) + Wikipedia RAV + custom knowledge_base.json'},{label:'Method',val:'10 FEVER-derived pattern classifiers + Wikipedia API Retrieval-Augmented Verification'},{label:'Known Facts DB',val:'Eiffel Tower (1889, Paris, 330m), Metformin (Type 2 diabetes), Cold Fusion (unvalidated)'},{label:'Output Verdicts',val:'Factually Sound (≥75) · Uncertain (50–74) · Hallucination Risk (<50)'},{label:'Weight in II',val:'w₂ = 0.25 (highest — factual correctness is primary trust failure)'},{label:'Benchmark',val:'0.79 accuracy'}]},
-  m3:{icon:'🔒',title:'M₃ · Privacy Audit',fields:[{label:'Dataset',val:'Enron Email Dataset (500,000 real emails, Kaggle) + PII Masking Dataset'},{label:'PII Classes',val:'Email, US phone, Indian phone, international phone, SSN, Aadhaar, credit card, passport, IP, DOB, bank account, medical record'},{label:'Additional',val:'Sensitive keyword detection: credentials, financial, medical, personal categories'},{label:'Output Verdicts',val:'Safe (≥80) · PII Detected (50–79) · High Risk (<50)'},{label:'Weight in II',val:'w₃ = 0.20'},{label:'Benchmark Recall',val:'0.96'}]},
-  m4:{icon:'🔍',title:'M₄ · Explainability',fields:[{label:'Datasets',val:'e-SNLI (HuggingFace, 570K human explanations) + CoS-E (Commonsense Explanations)'},{label:'Method',val:'18-feature linguistic pipeline: 5 reasoning + 4 hedging + 4 opacity + 5 structural features'},{label:'Positive Signals',val:'Causal reasoning (because, therefore), source attribution, hedging, logical connectors'},{label:'Penalty Signals',val:'Overconfidence (obviously, clearly), assumed knowledge, absolute claims, appeal to trust'},{label:'Output Verdicts',val:'Explainable (≥75) · Partially Explainable (50–74) · Opaque (<50)'},{label:'Weight in II',val:'w₄ = 0.15 · Benchmark AOPC: 0.81'}]},
-  m5:{icon:'🎭',title:'M₅ · Deepfake / Synthetic Detection',fields:[{label:'Datasets',val:'HC3 (HuggingFace, 58,546 Human/ChatGPT pairs) + GLTR Research (MIT-IBM)'},{label:'Method',val:'Lexical AI-marker detection + GLTR statistical features (TTR, sentence length variance, bigram repetition)'},{label:'AI Markers',val:'Corporate speak, common AI phrases, hedge pileup, perfect enumeration, AI disclosure'},{label:'Human Markers',val:'Informal language, contractions, personal voice, emotional expression'},{label:'Output Verdicts',val:'Authentic (≥75) · Suspicious (50–74) · Synthetic (<50)'},{label:'Weight in II',val:'w₅ = 0.20 · Benchmark ROC-AUC: 0.92'}]},
-  agg:{icon:'📊',title:'Score Aggregator · Integrity Index',fields:[{label:'Formula',val:'II = Σwᵢ / Σ(wᵢ / Sᵢ) — Weighted Harmonic Mean'},{label:'Weights',val:'w₁=0.20, w₂=0.25, w₃=0.20, w₄=0.15, w₅=0.20 (Σ=1.0)'},{label:'Trust Tiers',val:'High Trust (≥85) · Moderate Trust (65–84) · Low Trust (40–64) · Reject (<40)'},{label:'Property',val:'Cannot be gamed — single-dimension failure drags entire index down'},{label:'Output',val:'JSON report with per-module scores, verdicts, findings, II score, trust tier'}]}
+  input:{icon:'📥',title:'Input Layer',fields:[{label:'Supported Formats',val:'Plain text, JPEG/PNG/WebP images, MP4/MOV/AVI/WebM video files, Image for AI detection'},{label:'Max Input Size',val:'Text: unlimited · Image (OCR): 10MB · Video: 50MB · Image (AI detect): 10MB'},{label:'Preprocessing',val:'Text: UTF-8 normalization · Image: PIL OCR · Video: ffmpeg + Tesseract OCR · Image deepfake: ELA+DCT+PNA'},{label:'Output',val:'Normalized text to all five evaluation modules, or manipulation% + heatmap for image detection'}]},
+  pre:{icon:'🔧',title:'Pre-processing Module',fields:[{label:'Text',val:'Whitespace normalization, Unicode NFC, sentence segmentation'},{label:'Image OCR',val:'PIL preprocessing (contrast enhancement, grayscale) → Tesseract v5 with best-of-3 config'},{label:'Video OCR',val:'ffmpeg extracts up to 8 frames → per-frame Tesseract OCR → deduplication → combine'},{label:'Image Deepfake',val:'PIL convert to RGB → ELA re-compression → DCT via scipy → Noise map via Gaussian blur'}]},
+  m1:{icon:'⚖️',title:'M₁ · Bias Detection',fields:[{label:'Algorithm',val:'Logistic Regression (class_weight=balanced, C=1.0, solver=lbfgs, max_iter=1000)'},{label:'Features',val:'TF-IDF Vectorizer (ngram_range=(1,2), max_features=10,000, sublinear_tf=True)'},{label:'Training Data',val:'WinoBias: 3,160 stereotype sentence pairs (label=1) + StereoSet: 17,000 samples (validation split)'},{label:'Saved Model',val:'models/m1_bias_model.pkl + models/m1_bias_vectorizer.pkl'},{label:'Output Verdicts',val:'Neutral (≥80) · Mild Bias Detected (50–79) · Biased Content (<50)'},{label:'Benchmark F1',val:'0.84 on AICES benchmark · Weight w₁ = 0.20'}]},
+  m2:{icon:'🧠',title:'M₂ · Hallucination Detection',fields:[{label:'Algorithm',val:'Random Forest (n_estimators=100, max_depth=15, class_weight=balanced, n_jobs=-1)'},{label:'Features',val:'TF-IDF Vectorizer (ngram_range=(1,3), max_features=20,000, sublinear_tf=True)'},{label:'Training Data',val:'fever_train.jsonl: 60,000 claims (SUPPORTS=0, REFUTES/NEI=1) + fever_dev.jsonl'},{label:'Saved Model',val:'models/m2_hallucination_model.pkl + models/m2_hallucination_vectorizer.pkl'},{label:'Runtime Supplement',val:'Wikipedia Search API (RAV) + knowledge_base.json fact checking'},{label:'Benchmark',val:'0.79 accuracy · Weight w₂ = 0.25 (highest — factual correctness)'}]},
+  m3:{icon:'🔒',title:'M₃ · Privacy Audit',fields:[{label:'Method',val:'12-Class Compiled Regex PII Classifier (no ML training — deterministic)'},{label:'Validation',val:'Enron Email Dataset (500,000 emails, Kaggle) — calibrates risk weights per PII type'},{label:'PII Classes',val:'SSN, Aadhaar, Credit Card, Bank Acct (critical) · Passport, Medical (high) · Email, Phone, DOB (medium) · IP (low)'},{label:'Saved Config',val:'models/m3_pii_config.json'},{label:'Output Verdicts',val:'Safe (≥80) · PII Detected (50–79) · High Risk (<50)'},{label:'Benchmark Recall',val:'0.96 · Weight w₃ = 0.20'}]},
+  m4:{icon:'🔍',title:'M₄ · Explainability',fields:[{label:'Algorithm',val:'LinearSVC wrapped in CalibratedClassifierCV (C=1.0, class_weight=balanced, max_iter=2000)'},{label:'Features',val:'TF-IDF Vectorizer (ngram_range=(1,2), max_features=8,000, sublinear_tf=True)'},{label:'Training Data',val:'e-SNLI (HuggingFace, 25,000 samples) — label=1 if explanation has causal/hedging language'},{label:'Saved Model',val:'models/m4_explain_model.pkl + models/m4_explain_vectorizer.pkl'},{label:'Output Verdicts',val:'Explainable (≥75) · Partially Explainable (50–74) · Opaque (<50)'},{label:'Benchmark',val:'AOPC: 0.81 · Weight w₄ = 0.15'}]},
+  m5:{icon:'🎭',title:'M₅ · Deepfake / Synthetic Detection',fields:[{label:'Algorithm (Text)',val:'Gradient Boosting (n_estimators=100, learning_rate=0.1, max_depth=4, subsample=0.8)'},{label:'Features (Text)',val:'TF-IDF (15K features) + 7 GLTR statistical features: TTR, sentence variance, bigram repetition, word count, unique words, long word ratio, avg sentence length'},{label:'Training Data',val:'HC3 (HuggingFace, 30,000 samples) — human=0, ChatGPT=1'},{label:'Algorithm (Image)',val:'ELA (Error Level Analysis) + DCT (Frequency Analysis) + PNA (Pixel Noise Analysis) — no training needed'},{label:'Saved Model',val:'models/m5_deepfake_model.pkl + models/m5_deepfake_tfidf.pkl'},{label:'Benchmark',val:'ROC-AUC: 0.92 · Weight w₅ = 0.20'}]},
+  agg:{icon:'📊',title:'Score Aggregator · Integrity Index',fields:[{label:'Formula',val:'II = Σwᵢ / Σ(wᵢ / Sᵢ) — Weighted Harmonic Mean'},{label:'Weights',val:'w₁=0.20 (LR), w₂=0.25 (RF), w₃=0.20 (Regex), w₄=0.15 (SVC), w₅=0.20 (GB) · Σ=1.0'},{label:'Trust Tiers',val:'High Trust (≥85) · Moderate Trust (65–84) · Low Trust (40–64) · Reject (<40)'},{label:'Property',val:'Cannot be gamed — single-dimension failure drags entire index down'},{label:'Output',val:'JSON report with per-module scores, verdicts, findings, II score, trust tier'}]}
 };
 
 // ── DARK MODE ──
@@ -344,12 +415,14 @@ document.querySelectorAll('.mode-btn').forEach(btn=>{
     currentMode=btn.dataset.mode;
     document.getElementById('text-mode-panel').style.display=currentMode==='text'?'block':'none';
     document.getElementById('media-mode-panel').style.display=currentMode==='media'?'block':'none';
+    document.getElementById('imgdf-mode-panel').style.display=currentMode==='imgdf'?'block':'none';
     document.getElementById('results').classList.remove('visible');
     document.getElementById('error-box').classList.remove('visible');
+    document.getElementById('imgdf-results').style.display='none';
   });
 });
 
-// ── CONTENT TYPE (TEXT mode) ──
+// ── CONTENT TYPE (TEXT) ──
 let selectedType='text';
 document.querySelectorAll('#text-mode-panel .type-btn').forEach(btn=>{
   btn.addEventListener('click',()=>{
@@ -358,7 +431,7 @@ document.querySelectorAll('#text-mode-panel .type-btn').forEach(btn=>{
   });
 });
 
-// ── CONTENT TYPE (MEDIA mode) ──
+// ── CONTENT TYPE (MEDIA) ──
 let selectedMediaType='text';
 document.querySelectorAll('#media-type-row .type-btn').forEach(btn=>{
   btn.addEventListener('click',()=>{
@@ -380,67 +453,41 @@ document.querySelectorAll('.sample-btn').forEach(btn=>{
   btn.addEventListener('click',()=>{contentInput.value=SAMPLES[btn.dataset.sample];contentInput.dispatchEvent(new Event('input'));});
 });
 
-// ── CLEAR (text) ──
+// ── CLEAR TEXT ──
 document.getElementById('clear-btn').addEventListener('click',()=>{
   contentInput.value='';contentInput.dispatchEvent(new Event('input'));
   document.getElementById('results').classList.remove('visible');
   document.getElementById('error-box').classList.remove('visible');
 });
 
-// ── MEDIA UPLOAD ──────────────────────────────────────────────────────
+// ── MEDIA UPLOAD (video/image for OCR) ──
 let currentMediaFile=null;
-
 const dropZone=document.getElementById('drop-zone');
 const fileInput=document.getElementById('media-file-input');
-
 dropZone.addEventListener('click',()=>fileInput.click());
 dropZone.addEventListener('dragover',(e)=>{e.preventDefault();dropZone.classList.add('drag-over')});
 dropZone.addEventListener('dragleave',()=>dropZone.classList.remove('drag-over'));
 dropZone.addEventListener('drop',(e)=>{
   e.preventDefault();dropZone.classList.remove('drag-over');
-  const file=e.dataTransfer.files[0];
-  if(file)handleMediaFile(file);
+  const file=e.dataTransfer.files[0];if(file)handleMediaFile(file);
 });
-fileInput.addEventListener('change',(e)=>{
-  const file=e.target.files[0];
-  if(file)handleMediaFile(file);
-});
+fileInput.addEventListener('change',(e)=>{const file=e.target.files[0];if(file)handleMediaFile(file);});
 
 function handleMediaFile(file){
   currentMediaFile=file;
   const sizeMB=(file.size/1024/1024).toFixed(2);
   const isImage=file.type.startsWith('image/');
   const isVideo=file.type.startsWith('video/');
-
-  if(!isImage&&!isVideo){
-    showError('Unsupported file type. Please upload an image (JPEG, PNG, WebP) or video (MP4, MOV, AVI, WebM).');
-    return;
-  }
-
-  // Show preview
+  if(!isImage&&!isVideo){showError('Unsupported file type.');return}
   document.getElementById('drop-zone').style.display='none';
   const preview=document.getElementById('media-preview');
   preview.style.display='block';
   document.getElementById('mp-filename').textContent=file.name;
   document.getElementById('mp-meta').textContent=`${file.type} · ${sizeMB} MB`;
-
   const thumbWrap=document.getElementById('mp-thumb-wrap');
   thumbWrap.innerHTML='';
-
-  if(isImage){
-    const img=document.createElement('img');
-    img.className='mp-thumb-img';
-    img.src=URL.createObjectURL(file);
-    thumbWrap.appendChild(img);
-  } else {
-    const vid=document.createElement('video');
-    vid.className='mp-thumb-img';
-    vid.src=URL.createObjectURL(file);
-    vid.controls=true;vid.muted=true;
-    thumbWrap.appendChild(vid);
-  }
-
-  // Reset extracted box
+  if(isImage){const img=document.createElement('img');img.className='mp-thumb-img';img.src=URL.createObjectURL(file);thumbWrap.appendChild(img);}
+  else{const vid=document.createElement('video');vid.className='mp-thumb-img';vid.src=URL.createObjectURL(file);vid.controls=true;vid.muted=true;thumbWrap.appendChild(vid);}
   document.getElementById('extracted-box').style.display='none';
   document.getElementById('error-box').classList.remove('visible');
   document.getElementById('results').classList.remove('visible');
@@ -454,16 +501,11 @@ document.getElementById('mp-remove').addEventListener('click',()=>{
   document.getElementById('results').classList.remove('visible');
   document.getElementById('error-box').classList.remove('visible');
 });
+document.getElementById('media-clear-btn').addEventListener('click',()=>document.getElementById('mp-remove').click());
 
-document.getElementById('media-clear-btn').addEventListener('click',()=>{
-  document.getElementById('mp-remove').click();
-});
-
-// ── MEDIA ANALYZE BUTTON ──
+// ── MEDIA ANALYZE ──
 document.getElementById('media-analyze-btn').addEventListener('click',async()=>{
-  if(!currentMediaFile){
-    showError('Please upload an image or video file first.');return;
-  }
+  if(!currentMediaFile){showError('Please upload an image or video file first.');return}
   const btn=document.getElementById('media-analyze-btn');
   btn.disabled=true;btn.classList.add('loading');
   btn.querySelector('.btn-icon').textContent='⟳';
@@ -471,62 +513,39 @@ document.getElementById('media-analyze-btn').addEventListener('click',async()=>{
   document.getElementById('status-bar').classList.add('visible');
   document.getElementById('error-box').classList.remove('visible');
   document.getElementById('results').classList.remove('visible');
-
   const isVideo=currentMediaFile.type.startsWith('video/');
   const STATUSES_MEDIA=isVideo
-    ?['Reading video file...','Extracting frames with ffmpeg...','Running OCR on frames...','Deduplicating text...','Running M₁ Bias Detection...','Running M₂ Hallucination Detection...','Running M₃ Privacy Audit...','Running M₄ Explainability...','Running M₅ Deepfake Detection...','Computing Integrity Index...']
-    :['Reading image file...','Preprocessing image — contrast & resize...','Running Tesseract OCR...','Cleaning extracted text...','Running M₁ Bias Detection...','Running M₂ Hallucination...','Running M₃ Privacy Audit...','Running M₄ Explainability...','Running M₅ Deepfake Detection...','Computing Integrity Index...'];
-
+    ?['Reading video file...','Extracting frames with ffmpeg...','Running OCR on frames...','Deduplicating text...','Running M₁–M₅ evaluation...','Computing Integrity Index...']
+    :['Reading image file...','Preprocessing for OCR...','Running Tesseract OCR v5...','Running M₁–M₅ evaluation...','Computing Integrity Index...'];
   let sIdx=0;
-  const sTimer=setInterval(()=>{
-    document.getElementById('status-text').textContent=STATUSES_MEDIA[sIdx];
-    sIdx=Math.min(sIdx+1,STATUSES_MEDIA.length-1);
-  },isVideo?3000:1500);
-
+  document.getElementById('status-text').textContent=STATUSES_MEDIA[0];
+  const sTimer=setInterval(()=>{sIdx=Math.min(sIdx+1,STATUSES_MEDIA.length-1);document.getElementById('status-text').textContent=STATUSES_MEDIA[sIdx];},isVideo?3000:1500);
   try{
-    // Read file as base64
     const base64=await readFileAsBase64(currentMediaFile);
-
-    // Update status
     btn.querySelector('.btn-text').textContent='Evaluating...';
-
     const res=await fetch(`${API_BASE_URL}/evaluate-media`,{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({
-        file_data:base64,
-        mime_type:currentMediaFile.type,
-        filename:currentMediaFile.name,
-        content_type:selectedMediaType
-      })
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({file_data:base64,mime_type:currentMediaFile.type,filename:currentMediaFile.name,content_type:selectedMediaType})
     });
     const data=await res.json();
-    clearInterval(sTimer);
-    document.getElementById('status-bar').classList.remove('visible');
-
+    clearInterval(sTimer);document.getElementById('status-bar').classList.remove('visible');
     if(!res.ok||data.error)throw new Error(data.error||'Evaluation failed');
-
-    // Show extracted text preview
     if(data.media_extraction){
       const ex=data.media_extraction;
       document.getElementById('extracted-box').style.display='block';
       document.getElementById('ex-method').textContent=ex.method||'';
-      const det=ex.details||{};
-      const statsArr=[];
+      const det=ex.details||{};const statsArr=[];
       if(det.image_size)statsArr.push(`Size: ${det.image_size}`);
       if(det.duration_seconds)statsArr.push(`Duration: ${det.duration_seconds}s`);
       if(det.frames_extracted)statsArr.push(`Frames: ${det.frames_extracted}`);
-      if(det.frames_with_text)statsArr.push(`Frames with text: ${det.frames_with_text}`);
       if(det.words_extracted)statsArr.push(`Words extracted: ${det.words_extracted}`);
       document.getElementById('ex-stats').textContent=statsArr.join(' · ');
       document.getElementById('ex-text').textContent=ex.extracted_text_preview||'';
     }
-
     lastResult=data;
-    renderResults(data, data.media_extraction?.extracted_text_preview||'[media content]', true);
+    renderResults(data,data.media_extraction?.extracted_text_preview||'[media content]',true);
   }catch(err){
-    clearInterval(sTimer);
-    document.getElementById('status-bar').classList.remove('visible');
+    clearInterval(sTimer);document.getElementById('status-bar').classList.remove('visible');
     showError(err.message||'Evaluation failed. Make sure the backend server is running.');
   }finally{
     btn.disabled=false;btn.classList.remove('loading');
@@ -535,17 +554,154 @@ document.getElementById('media-analyze-btn').addEventListener('click',async()=>{
   }
 });
 
-function readFileAsBase64(file){
-  return new Promise((resolve,reject)=>{
-    const reader=new FileReader();
-    reader.onload=()=>{
-      const result=reader.result;
-      const base64=result.split(',')[1];
-      resolve(base64);
-    };
-    reader.onerror=()=>reject(new Error('Failed to read file'));
-    reader.readAsDataURL(file);
-  });
+// ══════════════════════════════════════════════════════════════════
+// IMAGE DEEPFAKE DETECTION
+// ══════════════════════════════════════════════════════════════════
+let currentImgdfFile=null;
+const imgdfDropZone=document.getElementById('imgdf-drop-zone');
+const imgdfFileInput=document.getElementById('imgdf-file-input');
+
+imgdfDropZone.addEventListener('click',()=>imgdfFileInput.click());
+imgdfDropZone.addEventListener('dragover',(e)=>{e.preventDefault();imgdfDropZone.classList.add('drag-over')});
+imgdfDropZone.addEventListener('dragleave',()=>imgdfDropZone.classList.remove('drag-over'));
+imgdfDropZone.addEventListener('drop',(e)=>{
+  e.preventDefault();imgdfDropZone.classList.remove('drag-over');
+  const file=e.dataTransfer.files[0];if(file)handleImgdfFile(file);
+});
+imgdfFileInput.addEventListener('change',(e)=>{const file=e.target.files[0];if(file)handleImgdfFile(file);});
+
+function handleImgdfFile(file){
+  if(!file.type.startsWith('image/')){showError('Image AI detection only supports image files (JPEG, PNG, WebP).');return;}
+  currentImgdfFile=file;
+  const sizeMB=(file.size/1024/1024).toFixed(2);
+  imgdfDropZone.style.display='none';
+  const prev=document.getElementById('imgdf-preview');prev.style.display='block';
+  document.getElementById('imgdf-filename').textContent=file.name;
+  document.getElementById('imgdf-meta').textContent=`${file.type} · ${sizeMB} MB`;
+  const thumbWrap=document.getElementById('imgdf-thumb-wrap');thumbWrap.innerHTML='';
+  const img=document.createElement('img');img.className='mp-thumb-img';img.src=URL.createObjectURL(file);thumbWrap.appendChild(img);
+  document.getElementById('imgdf-results').style.display='none';
+  document.getElementById('error-box').classList.remove('visible');
+}
+
+document.getElementById('imgdf-remove').addEventListener('click',()=>{
+  currentImgdfFile=null;imgdfFileInput.value='';
+  document.getElementById('imgdf-preview').style.display='none';
+  imgdfDropZone.style.display='flex';
+  document.getElementById('imgdf-results').style.display='none';
+  document.getElementById('error-box').classList.remove('visible');
+});
+document.getElementById('imgdf-clear-btn').addEventListener('click',()=>{
+  document.getElementById('imgdf-remove').click();
+});
+
+document.getElementById('imgdf-scan-btn').addEventListener('click',async()=>{
+  if(!currentImgdfFile){showError('Please upload an image file first.');return;}
+  const btn=document.getElementById('imgdf-scan-btn');
+  btn.disabled=true;btn.classList.add('loading');
+  btn.querySelector('.btn-icon').textContent='⟳';
+  btn.querySelector('.btn-text').textContent='Scanning...';
+  document.getElementById('status-bar').classList.add('visible');
+  document.getElementById('error-box').classList.remove('visible');
+  document.getElementById('imgdf-results').style.display='none';
+
+  const STATUSES_DF=[
+    'Reading image file...','Running Error Level Analysis (ELA)...',
+    'Applying DCT Frequency Analysis...','Pixel Noise Analysis in progress...',
+    'Building manipulation heatmap...','Analysing 3×3 region grid...','Computing final verdict...'
+  ];
+  let sIdx=0;
+  document.getElementById('status-text').textContent=STATUSES_DF[0];
+  const sTimer=setInterval(()=>{sIdx=Math.min(sIdx+1,STATUSES_DF.length-1);document.getElementById('status-text').textContent=STATUSES_DF[sIdx];},1200);
+
+  try{
+    const base64=await readFileAsBase64(currentImgdfFile);
+    const res=await fetch(`${API_BASE_URL}/analyze-image-deepfake`,{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({file_data:base64,filename:currentImgdfFile.name,mime_type:currentImgdfFile.type})
+    });
+    const data=await res.json();
+    clearInterval(sTimer);document.getElementById('status-bar').classList.remove('visible');
+    if(!res.ok||!data.success)throw new Error(data.error||'Image analysis failed');
+    renderImgdfResults(data);
+  }catch(err){
+    clearInterval(sTimer);document.getElementById('status-bar').classList.remove('visible');
+    showError(err.message||'Image deepfake scan failed. Make sure backend is running.');
+  }finally{
+    btn.disabled=false;btn.classList.remove('loading');
+    btn.querySelector('.btn-icon').textContent='🔍';
+    btn.querySelector('.btn-text').textContent='Scan for AI Generation';
+  }
+});
+
+function renderImgdfResults(data){
+  const colorMap={'ai_generated':'#8b0000','suspicious':'#c8960c','authentic':'#1d6348','error':'#555'};
+  const color=colorMap[data.verdict_code]||'#555';
+  const pct=data.manipulation_percentage||0;
+  const t=data.technique_scores||{};
+  const ela=t.ela||{};const dct=t.dct||{};const pna=t.pna||{};
+  const regions=data.region_analysis||{};
+
+  // Verdict header
+  const hdr=document.getElementById('imgdf-verdict-header');
+  hdr.style.borderColor=color;
+  document.getElementById('imgdf-pct').textContent=pct+'%';
+  document.getElementById('imgdf-pct').style.color=color;
+  const tag=document.getElementById('imgdf-verdict-tag');
+  tag.textContent=data.verdict;tag.style.borderColor=color;tag.style.color=color;
+  document.getElementById('imgdf-explanation').textContent=data.explanation||'';
+  const info=data.image_info||{};
+  document.getElementById('imgdf-meta-row').textContent=
+    `⏱ ${data.processing_time_seconds||0}s  ·  ${info.width||0}×${info.height||0}px  ·  ${info.filename||''}`;
+
+  // Technique cards
+  const techGrid=document.getElementById('imgdf-tech-grid');
+  techGrid.innerHTML=[
+    {name:'ELA — Error Level Analysis',score:ela.score||0,color:'#b5451b',
+     detail:`Mean residual: ${ela.mean_residual||0}  ·  Max: ${ela.max_residual||0}`,
+     desc:ela.description||''},
+    {name:'DCT — Frequency Analysis',score:dct.score||0,color:'#c8960c',
+     detail:`High-freq ratio: ${dct.high_freq_ratio||0}  ·  Anomaly: ${dct.anomaly_detected?'Yes':'No'}`,
+     desc:dct.description||''},
+    {name:'PNA — Pixel Noise Analysis',score:pna.score||0,color:'#4a2d7a',
+     detail:`Noise std: ${pna.noise_std||0}  ·  Level: ${pna.inconsistency_level||'-'}`,
+     desc:pna.description||''},
+  ].map(tc=>`
+    <div class="imgdf-tech-card" style="border-top:3px solid ${tc.color}">
+      <div class="imgdf-tc-name" style="color:${tc.color}">${tc.name}</div>
+      <div class="imgdf-tc-score" style="color:${tc.color}">${tc.score}%</div>
+      <div class="imgdf-tc-bar"><div style="width:${tc.score}%;background:${tc.color};height:100%;transition:width 1.2s ease;"></div></div>
+      <div class="imgdf-tc-detail">${tc.detail}</div>
+      <div class="imgdf-tc-desc">${tc.desc}</div>
+    </div>
+  `).join('');
+
+  // Heatmap
+  if(data.heatmap_base64){
+    document.getElementById('imgdf-heatmap-img').src='data:image/png;base64,'+data.heatmap_base64;
+    document.getElementById('imgdf-heatmap-box').style.display='block';
+  }else{
+    document.getElementById('imgdf-heatmap-box').style.display='none';
+  }
+
+  // Region summary
+  document.getElementById('imgdf-region-summary').textContent=
+    `${regions.suspicious_regions||0}/9 suspicious  ·  ${regions.pct_image_suspicious||0}% of image area  ·  Grid: 3×3`;
+
+  // Region grid (3×3)
+  const regionGrid=document.getElementById('imgdf-region-grid');
+  const rList=regions.regions||[];
+  regionGrid.innerHTML=rList.map(r=>{
+    const rc=r.status==='suspicious'?'#8b0000':r.status==='uncertain'?'#c8960c':'#1d6348';
+    return`<div class="imgdf-region-cell" style="border-color:${rc}">
+      <div class="imgdf-rc-name">${r.name}</div>
+      <div class="imgdf-rc-pct" style="color:${rc}">${r.manipulation_pct}%</div>
+      <div class="imgdf-rc-status" style="color:${rc}">${r.status.toUpperCase()}</div>
+    </div>`;
+  }).join('');
+
+  document.getElementById('imgdf-results').style.display='block';
+  document.getElementById('imgdf-results').scrollIntoView({behavior:'smooth',block:'start'});
 }
 
 // ── PIPELINE ──
@@ -567,8 +723,8 @@ function animateBenchBars(){
   document.querySelectorAll('.bench-bar').forEach(bar=>{setTimeout(()=>{bar.style.width=bar.dataset.w+'%'},200)});
 }
 
-// ── STATUS + ERROR ──
-const STATUSES=['Initializing evaluation pipeline...','Pre-processing input — tokenization & normalization...','M₁ Bias Detection — analyzing demographic & ideological signals...','M₂ Hallucination — retrieving reference passages & running FEVER patterns...','M₃ Privacy Audit — scanning for PII entities & sensitive patterns...','M₄ Explainability — computing 18-feature linguistic analysis...','M₅ Deepfake Analysis — HC3 lexical & GLTR statistical examination...','Score Aggregator — computing weighted Integrity Index...'];
+// ── STATUS / ERROR ──
+const STATUSES=['Initializing evaluation pipeline...','Pre-processing input — tokenization & normalization...','M₁ Bias — Logistic Regression prediction...','M₂ Hallucination — Random Forest + Wikipedia RAV...','M₃ Privacy Audit — 12-class PII scan...','M₄ Explainability — LinearSVC (CalibratedSVC) analysis...','M₅ Deepfake — Gradient Boosting + GLTR statistics...','Score Aggregator — computing Weighted Harmonic Mean II...'];
 let sIdx=0,sTimer;
 function startStatus(){sIdx=0;document.getElementById('status-text').textContent=STATUSES[0];sTimer=setInterval(()=>{sIdx=(sIdx+1)%STATUSES.length;document.getElementById('status-text').textContent=STATUSES[sIdx]},1800)}
 function stopStatus(){clearInterval(sTimer);document.getElementById('status-bar').classList.remove('visible')}
@@ -583,13 +739,20 @@ function vClass(v){const lv=v.toLowerCase();if(['neutral','factually sound','saf
 function iiColor(ii){if(ii>=85)return'#1d6348';if(ii>=65)return'#c8960c';if(ii>=40)return'#b5451b';return'#8b0000'}
 function iiTier(ii){if(ii>=85)return'★ HIGH TRUST';if(ii>=65)return'◈ MODERATE TRUST';if(ii>=40)return'▲ LOW TRUST';return'✕ REJECT'}
 
+function readFileAsBase64(file){
+  return new Promise((resolve,reject)=>{
+    const reader=new FileReader();
+    reader.onload=()=>resolve(reader.result.split(',')[1]);
+    reader.onerror=()=>reject(new Error('Failed to read file'));
+    reader.readAsDataURL(file);
+  });
+}
+
 // ── RADAR CHART ──
 function drawRadar(scores,labels,colors){
   const canvas=document.getElementById('radar-chart');
   const ctx=canvas.getContext('2d');
-  const W=canvas.width,H=canvas.height;
-  const cx=W/2,cy=H/2,R=Math.min(W,H)/2-40;
-  const n=scores.length;
+  const W=canvas.width,H=canvas.height,cx=W/2,cy=H/2,R=Math.min(W,H)/2-40,n=scores.length;
   ctx.clearRect(0,0,W,H);
   const isDark=document.body.classList.contains('dark');
   const gridColor=isDark?'rgba(255,255,255,0.08)':'rgba(0,0,0,0.07)';
@@ -620,10 +783,11 @@ function renderHistory(){
     <div class="history-item" data-id="${e.id}">
       <button class="hi-delete" data-id="${e.id}" title="Delete">✕</button>
       <div class="hi-head">
-        <span class="hi-score" style="color:${iiColor(e.ii)}">${e.ii}</span>
-        <span class="hi-tier verdict-${e.ii>=85?'safe':e.ii>=40?'warn':'risk'}" style="border-color:${iiColor(e.ii)};color:${iiColor(e.ii)}">${iiTier(e.ii)}</span>
+        <span class="hi-score" style="color:${iiColor(e.ii)}">${e.ii||'—'}</span>
+        ${e.ii?`<span class="hi-tier verdict-${e.ii>=85?'safe':e.ii>=40?'warn':'risk'}" style="border-color:${iiColor(e.ii)};color:${iiColor(e.ii)}">${iiTier(e.ii)}</span>`:''}
         ${e.fromMedia?'<span class="hi-media-tag">📷 Media</span>':''}
-        <span class="hi-date">${e.date} · ${e.type}</span>
+        ${e.fromImgdf?'<span class="hi-media-tag" style="border-color:#4a2d7a;color:#4a2d7a">🔍 AI Scan</span>':''}
+        <span class="hi-date">${e.date}</span>
       </div>
       <div class="hi-preview">${e.preview}</div>
       <div class="hi-flags">${(e.flags||[]).map(f=>`<span class="hi-flag">${f}</span>`).join('')}</div>
@@ -660,8 +824,8 @@ document.getElementById('analyze-btn').addEventListener('click',async()=>{
   }
 });
 
-// ── RENDER RESULTS ──
-function renderResults(r, content, fromMedia){
+// ── RENDER TEXT/MEDIA RESULTS ──
+function renderResults(r,content,fromMedia){
   const mods=[
     {key:'m1_bias',name:'M₁ · Bias Detection',cls:'mc-accent',color:'#b5451b'},
     {key:'m2_hallucination',name:'M₂ · Hallucination',cls:'mc-gold',color:'#c8960c'},
@@ -671,48 +835,36 @@ function renderResults(r, content, fromMedia){
   ];
   const scores=mods.map(m=>r[m.key]?.score||0);
   const ii=r.integrity_index||computeII(scores);
-
-  // Media badge
   const badge=document.getElementById('media-source-badge');
   if(fromMedia&&r.media_extraction){
     badge.style.display='flex';
     const isVideo=r.media_extraction.media_type==='video';
     document.getElementById('msb-icon').textContent=isVideo?'🎬':'📷';
     document.getElementById('msb-label').textContent=isVideo?'Evaluated from video':'Evaluated from image';
-    const det=r.media_extraction.details||{};
-    const parts=[];
+    const det=r.media_extraction.details||{};const parts=[];
     if(det.filename)parts.push(det.filename);
     if(det.words_extracted)parts.push(`${det.words_extracted} words extracted`);
     if(det.frames_with_text)parts.push(`${det.frames_with_text} frames with text`);
     document.getElementById('msb-detail').textContent=parts.join(' · ');
-  } else {
-    badge.style.display='none';
-  }
-
+  }else{badge.style.display='none';}
   const iiEl=document.getElementById('ii-display');
   iiEl.textContent=ii.toFixed(1);iiEl.style.color=iiColor(ii);
   const vEl=document.getElementById('ii-verdict');vEl.textContent=r.trust_tier||iiTier(ii);vEl.style.color=iiColor(ii);
   document.getElementById('results-summary').textContent=`Evaluated as "${r.content_type||'AI-generated text'}" — Integrity Index computed via weighted harmonic mean across five modules.`;
   if(r.processing_time_seconds!=null)document.getElementById('proc-time').textContent=`⏱ Processing time: ${r.processing_time_seconds}s`;
-
   const tags=document.getElementById('highlight-tags');tags.innerHTML='';
   (r.flags||[]).forEach(f=>{const t=document.createElement('div');t.className='htag flag';t.textContent=f;tags.appendChild(t)});
   mods.forEach((m,i)=>{const t=document.createElement('div');t.className='htag';t.textContent=`${m.name.split('·')[0].trim()}: ${scores[i]}`;tags.appendChild(t)});
-
   if(r.narrative){document.getElementById('narrative-text').innerHTML=r.narrative.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>');document.getElementById('narrative-box').style.display='block'}
   else document.getElementById('narrative-box').style.display='none';
-
   drawRadar(scores,['M₁ Bias','M₂ Halluc.','M₃ Privacy','M₄ Explain.','M₅ Deepfake'],mods.map(m=>m.color));
-
   document.getElementById('module-results').innerHTML=mods.map((m,i)=>{
     const mod=r[m.key]||{};const sc=mod.score||scores[i];const vd=mod.verdict||'—';const fn=mod.findings||'—';
     return`<div class="module-card ${m.cls}"><div class="mc-head"><div class="mc-name">${m.name}</div><div class="mc-score">${sc}</div></div><div class="mc-track"><div class="mc-fill" style="background:${m.color};width:0%" data-w="${sc}" id="mcb-${i}"></div></div><div class="${vClass(vd)} mc-verdict">${vd}</div><div class="mc-findings">${fn}</div></div>`;
   }).join('');
-
   document.getElementById('results').classList.add('visible');
   document.getElementById('results').scrollIntoView({behavior:'smooth',block:'start'});
   setTimeout(()=>{mods.forEach((_,i)=>{const b=document.getElementById(`mcb-${i}`);if(b){b.style.transition='width 1.3s cubic-bezier(0.4,0,0.2,1)';b.style.width=b.dataset.w+'%'}})},150);
-
   addToHistory({ii,type:r.content_type||selectedType,flags:r.flags||[],preview:(content||'').slice(0,120)+'...',scores,fromMedia:!!fromMedia});
 }
 
@@ -725,7 +877,14 @@ document.getElementById('export-json').addEventListener('click',()=>{
 document.getElementById('export-csv').addEventListener('click',()=>{
   if(!lastResult){showToast('Run an evaluation first');return}
   const r=lastResult;
-  const rows=[['Module','Score','Verdict','Findings'],['M1 Bias',r.m1_bias?.score,r.m1_bias?.verdict,r.m1_bias?.findings],['M2 Hallucination',r.m2_hallucination?.score,r.m2_hallucination?.verdict,r.m2_hallucination?.findings],['M3 Privacy',r.m3_privacy?.score,r.m3_privacy?.verdict,r.m3_privacy?.findings],['M4 Explainability',r.m4_explainability?.score,r.m4_explainability?.verdict,r.m4_explainability?.findings],['M5 Deepfake',r.m5_deepfake?.score,r.m5_deepfake?.verdict,r.m5_deepfake?.findings],['','','',''],['Integrity Index',r.integrity_index,'',''],['Trust Tier',r.trust_tier,'',''],['Flags',(r.flags||[]).join('; '),'','']];
+  const rows=[['Module','Score','Verdict','Findings'],
+    ['M1 Bias',r.m1_bias?.score,r.m1_bias?.verdict,r.m1_bias?.findings],
+    ['M2 Hallucination',r.m2_hallucination?.score,r.m2_hallucination?.verdict,r.m2_hallucination?.findings],
+    ['M3 Privacy',r.m3_privacy?.score,r.m3_privacy?.verdict,r.m3_privacy?.findings],
+    ['M4 Explainability',r.m4_explainability?.score,r.m4_explainability?.verdict,r.m4_explainability?.findings],
+    ['M5 Deepfake',r.m5_deepfake?.score,r.m5_deepfake?.verdict,r.m5_deepfake?.findings],
+    ['','','',''],['Integrity Index',r.integrity_index,'',''],
+    ['Trust Tier',r.trust_tier,'',''],['Flags',(r.flags||[]).join('; '),'','']];
   const csv=rows.map(row=>row.map(c=>`"${String(c||'').replace(/"/g,'""')}"`).join(',')).join('\n');
   const blob=new Blob([csv],{type:'text/csv'});
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`aices-report-${Date.now()}.csv`;a.click();showToast('CSV exported!');

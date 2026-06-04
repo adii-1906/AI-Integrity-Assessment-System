@@ -1,9 +1,26 @@
-# Core Flask
-Flask>=2.3.0
+# AICES v3.0 — Backend Requirements
+# Install: pip install -r requirements.txt --break-system-packages
+
+# Core framework
+flask>=3.0.0
 flask-cors>=4.0.0
-
-# Google Gemini (free tier - no extra package needed, uses built-in urllib)
-# Get API key at: https://aistudio.google.com/app/apikey
-
-# Utilities
 python-dotenv>=1.0.0
+
+# Image deepfake detection (NEW in v3.0)
+opencv-python>=4.8.0
+Pillow>=10.0.0
+scipy>=1.11.0
+scikit-image>=0.21.0
+numpy>=1.24.0
+
+# OCR pipeline (v2.0)
+pytesseract>=0.3.10
+
+# ML training (train_models.py)
+scikit-learn>=1.3.0
+pandas>=2.0.0
+
+# System tools (install separately):
+#   Ubuntu:  sudo apt-get install ffmpeg tesseract-ocr
+#   macOS:   brew install ffmpeg tesseract
+#   Windows: download from ffmpeg.org + github.com/UB-Mannheim/tesseract
