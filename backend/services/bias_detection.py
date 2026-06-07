@@ -1,220 +1,130 @@
 """
-M1: Bias Detection Module
-DATASET VERSION - No API calls
-Uses WinoBias (GitHub) + StereoSet (HuggingFace) derived lexicons.
-Same class name, same method signature, same return structure as original.
+M1: Bias Detection Module — ML VERSION
+Loads trained Logistic Regression + TF-IDF from train_models.py output.
+Falls back to rule-based if models not yet trained.
+
+Model files needed (run train_models.py first):
+    backend/models/m1_bias_model.pkl
+    backend/models/m1_bias_vectorizer.pkl
 """
 
+import os
 import re
+import pickle
+import logging
 from typing import Dict, Any, List
 from collections import defaultdict
+
+logger = logging.getLogger(__name__)
+
+# ── Paths ──────────────────────────────────────────────────────────────
+_BASE_DIR  = os.path.dirname(os.path.abspath(__file__))
+_MODEL_DIR = os.path.join(_BASE_DIR, "..", "models")
+
+MODEL_PATH      = os.path.join(_MODEL_DIR, "m1_bias_model.pkl")
+VECTORIZER_PATH = os.path.join(_MODEL_DIR, "m1_bias_vectorizer.pkl")
 
 
 class BiasDetector:
     """
-    Multi-method bias detection using WinoBias + StereoSet datasets.
-    Replaces original - same interface, no API calls.
+    M1 Bias Detection.
+    Primary: Logistic Regression on TF-IDF (WinoBias + StereoSet).
+    Fallback: rule-based if .pkl not found.
+    Same interface as original — detect(text, content_type) → dict.
     """
 
-    # ── Lexicons derived from WinoBias (github.com/uclanlp/corefBias) ──
-    DEMOGRAPHIC_BIAS = {
-        "gender": {
-            "keywords": [
-                "mankind", "manmade", "man-made", "chairman", "fireman",
-                "policeman", "stewardess", "housewife", "career woman",
-                "male nurse", "lady doctor", "bossy", "hysterical", "shrill",
-                "emotional nature", "too emotional", "women are too",
-                "women tend to be", "men are naturally", "men are better",
-                "female engineer", "girl boss", "not suited for leadership",
-                "woman's place", "man's job", "acts like a man",
-                "emotional woman", "emotional female", "irrational woman",
-            ],
-            "stereotype_patterns": [
-                r"women\s+(are|tend to be|should)\s+\w+",
-                r"men\s+(are|tend to be|should)\s+\w+",
-                r"(he|his|him)\s+.{0,30}\s+(doctor|engineer|ceo|boss|leader)",
-                r"(she|her)\s+.{0,30}\s+(nurse|secretary|teacher|caregiver)",
-                r"women?\s+(?:always|never|can'?t|cannot)\s+\w+",
-                r"men?\s+(?:always|never|can'?t|cannot)\s+\w+",
-            ],
-            "weight": 0.8
-        },
-        "racial": {
-            "keywords": [
-                "exotic", "articulate", "urban", "ghetto", "thug",
-                "illegal alien", "colored", "oriental", "ethnic",
-                "foreign-looking", "inner city", "those people",
-                "these people always", "they are all",
-                "articulate for a", "well-spoken for a",
-                "crime-ridden community", "dangerous neighborhood",
-                "foreigners are", "immigrants always",
-                "immigrants are responsible", "not from here",
-            ],
-            "stereotype_patterns": [
-                r"(all|most|typical)\s+\w+\s+(people|individuals)\s+(are|tend)",
-                r"(?:black|white|asian|hispanic|arab)\s+people\s+(?:are|always|never|tend|will)",
-                r"immigrants?\s+(?:are|always|never|will|take)",
-            ],
-            "weight": 0.9
-        },
-        "age": {
-            "keywords": [
-                "senile", "decrepit", "over the hill", "out of touch",
-                "entitled millennials", "lazy gen-z", "ok boomer",
-                "young and naive", "too old to learn", "elderly confusion",
-                "millennials are lazy", "gen z is", "boomers don't",
-                "past their prime",
-            ],
-            "stereotype_patterns": [
-                r"(old|young)\s+people\s+(always|never|can't)",
-                r"(?:old|young|elderly)\s+people\s+(?:are|always|never|can'?t)",
-            ],
-            "weight": 0.7
-        },
-        "socioeconomic": {
-            "keywords": [
-                "trailer trash", "ghetto", "privileged", "elitist",
-                "uneducated masses", "backwards", "uncivilized",
-                "welfare queen", "trust fund", "poverty is a choice",
-                "poor people are lazy", "if they just worked harder",
-                "lower class mentality", "living off the government",
-            ],
-            "stereotype_patterns": [
-                r"(?:poor|rich)\s+people\s+(?:are|always|deserve|should)",
-            ],
-            "weight": 0.75
-        }
-    }
-
-    # ── Ideological bias indicators ──
-    IDEOLOGICAL_BIAS = {
-        "political_left": [
-            "libtard", "snowflake", "radical left", "socialist agenda",
-            "woke mob", "cancel culture extremists", "marxist plot",
-            "left-wing propaganda", "far-left extremist",
-        ],
-        "political_right": [
-            "fascist", "nazi", "alt-right", "racist conservatives",
-            "bigoted right-wing", "extremist republicans",
-            "right-wing extremist", "maga extremist",
-        ],
-        "absolutist_language": [
-            "always", "never", "everyone knows", "obviously",
-            "undeniably", "without exception", "all experts agree",
-            "nobody can deny", "it's obvious that", "no one can argue",
-            "completely proven", "universally accepted that",
-        ]
-    }
-
-    # ── Toxicity patterns ──
-    TOXICITY_PATTERNS = [
-        (r"(stupid|idiotic|moronic)\s+\w+", 0.6),
-        (r"(hate|despise|loathe)\s+(all|every)\s+\w+", 0.8),
-        (r"(should be|deserve to be)\s+(eliminated|removed|punished)", 0.9),
-        (r"(inferior|superior)\s+(race|gender|people)", 0.95),
-        (r"disgusting\s+people|filthy\s+immigrants|scum\s+of\s+society", 0.95),
-        (r"(subhuman|vermin|parasite)\b", 0.95),
+    # ── Supplementary rule layer (runs ALONGSIDE the ML model) ────────
+    # These catch high-severity explicit slurs / patterns that TF-IDF
+    # alone might miss when text is very short.
+    EXPLICIT_BIAS_PATTERNS = [
+        (r"\b(inferior|superior)\s+(race|gender|people|group)\b",   "explicit_slur",     0.95),
+        (r"\b(subhuman|vermin|parasite)\b",                          "explicit_slur",     0.95),
+        (r"\b(should be|deserve to be)\s+(eliminated|removed)\b",   "incitement",        0.90),
+        (r"\b(hate|despise|loathe)\s+(all|every)\s+\w+\b",          "hate_language",     0.80),
+        (r"\b(women|men)\s+(are|can'?t|cannot|should)\b",           "gender_stereotype", 0.70),
+        (r"\bimmigrants?\s+(are|always|cause|bring)\b",             "ethnic_stereotype", 0.75),
     ]
 
-    def __init__(self, use_perspective_api: bool = False):
-        self.use_perspective_api = use_perspective_api
+    # Content-type bias on ML probability
+    CONTENT_ADJUSTMENTS = {
+        "academic": -0.05,   # academic text uses technical language → lower bias estimate
+        "social":   +0.10,   # social media → slightly more weight on bias signals
+        "news":      0.00,
+        "text":      0.00,
+    }
+
+    def __init__(self):
+        self._model      = None
+        self._vectorizer = None
+        self._ml_ready   = False
+        self._load_models()
         self._compile_patterns()
 
+    def _load_models(self):
+        """Load trained pkl files produced by train_models.py."""
+        if os.path.exists(MODEL_PATH) and os.path.exists(VECTORIZER_PATH):
+            try:
+                with open(MODEL_PATH, "rb") as f:
+                    self._model = pickle.load(f)
+                with open(VECTORIZER_PATH, "rb") as f:
+                    self._vectorizer = pickle.load(f)
+                self._ml_ready = True
+                logger.info("[M1] Logistic Regression model loaded from models/")
+                print("  [M1 Bias] ML model loaded ✓")
+            except Exception as e:
+                logger.warning(f"[M1] Model load failed: {e}. Using fallback.")
+                print(f"  [M1 Bias] WARNING: model load failed ({e}) — using rule-based fallback")
+        else:
+            print("  [M1 Bias] WARNING: trained models not found — run train_models.py first. Using rule-based fallback.")
+
     def _compile_patterns(self):
-        self.compiled_demographic = {}
-        for category, config in self.DEMOGRAPHIC_BIAS.items():
-            self.compiled_demographic[category] = {
-                "patterns": [re.compile(p, re.IGNORECASE) for p in config["stereotype_patterns"]],
-                "keywords": config["keywords"],
-                "weight": config["weight"]
-            }
-        self.compiled_toxicity = [
-            (re.compile(p, re.IGNORECASE), w) for p, w in self.TOXICITY_PATTERNS
+        self._explicit_patterns = [
+            (re.compile(p, re.IGNORECASE), label, w)
+            for p, label, w in self.EXPLICIT_BIAS_PATTERNS
         ]
 
+    # ──────────────────────────────────────────────────────────────────
     def detect(self, text: str, content_type: str = "text") -> Dict[str, Any]:
         """
-        Same signature as original BiasDetector.detect().
-        Returns same structure as original.
+        Primary public method.  Same signature and return shape as before.
         """
-        findings = []
-        category_scores = defaultdict(float)
-        total_bias_score = 0.0
+        findings        = []
+        word_count      = max(len(text.split()), 1)
+        adjustment      = self.CONTENT_ADJUSTMENTS.get(content_type, 0.0)
 
-        text_lower = text.lower()
-        word_count = max(len(text.split()), 1)
-
-        # 1. Demographic bias detection (WinoBias + StereoSet derived)
-        for category, config in self.compiled_demographic.items():
-            category_findings = []
-            for keyword in config["keywords"]:
-                if keyword.lower() in text_lower:
-                    category_findings.append({
-                        "type": "demographic_keyword",
-                        "category": category,
-                        "indicator": keyword,
-                        "severity": config["weight"]
-                    })
-            for pattern in config["patterns"]:
-                matches = pattern.findall(text)
-                for match in matches:
-                    match_text = " ".join(match) if isinstance(match, tuple) else match
-                    category_findings.append({
-                        "type": "stereotype_pattern",
-                        "category": category,
-                        "indicator": match_text[:50],
-                        "severity": config["weight"]
-                    })
-            if category_findings:
-                findings.extend(category_findings)
-                category_scores[category] = min(len(category_findings) * config["weight"] / 3, 1.0)
-
-        # 2. Ideological bias detection
-        for ideology, keywords in self.IDEOLOGICAL_BIAS.items():
-            for keyword in keywords:
-                if keyword.lower() in text_lower:
-                    findings.append({
-                        "type": "ideological_bias",
-                        "category": ideology,
-                        "indicator": keyword,
-                        "severity": 0.7
-                    })
-                    category_scores["ideological"] += 0.15
-
-        # 3. Toxicity pattern detection
-        for pattern, weight in self.compiled_toxicity:
-            matches = pattern.findall(text)
-            for match in matches:
-                findings.append({
-                    "type": "toxicity",
-                    "category": "toxic_language",
-                    "indicator": match[:40] if isinstance(match, str) else str(match)[:40],
-                    "severity": weight
-                })
-                total_bias_score += weight * 0.3
-
-        # 4. Absolutist language check
-        absolutist_count = sum(1 for term in self.IDEOLOGICAL_BIAS["absolutist_language"]
-                               if term.lower() in text_lower)
-        if absolutist_count > 2:
+        # ── 1.  ML inference (Logistic Regression) ────────────────────
+        if self._ml_ready:
+            raw_bias_prob = self._ml_predict(text)
+            raw_bias_prob = max(0.0, min(1.0, raw_bias_prob + adjustment))
+            score_ml      = max(0, round((1.0 - raw_bias_prob) * 100))
             findings.append({
-                "type": "absolutist_language",
-                "category": "rhetorical_bias",
-                "indicator": f"{absolutist_count} absolutist terms detected",
-                "severity": 0.4
+                "type": "ml_classifier",
+                "model": "Logistic Regression (WinoBias + StereoSet TF-IDF)",
+                "bias_probability": round(raw_bias_prob, 4),
+                "severity": raw_bias_prob
             })
-            total_bias_score += 0.15
-
-        # Calculate final score (higher = less biased = better)
-        if findings:
-            avg_severity = sum(f["severity"] for f in findings) / len(findings)
-            density_factor = min(len(findings) / (word_count / 100), 1.0)
-            raw_bias = (avg_severity * 0.6 + density_factor * 0.4)
-            score = max(0, round((1 - raw_bias) * 100))
         else:
-            score = 95
+            # Fallback: density-based score from explicit patterns only
+            raw_bias_prob = 0.0
+            score_ml      = 95   # optimistic default until overridden below
 
-        # Verdict
+        # ── 2.  Explicit pattern layer (always runs) ──────────────────
+        explicit_findings, explicit_severity = self._check_explicit(text)
+        findings.extend(explicit_findings)
+
+        if explicit_findings:
+            density_factor = min(len(explicit_findings) / (word_count / 100), 1.0)
+            pattern_bias   = (explicit_severity * 0.6) + (density_factor * 0.4)
+            if self._ml_ready:
+                # Blend: 70 % ML, 30 % pattern (but pattern can never improve score)
+                blended = max(raw_bias_prob, 0.7 * raw_bias_prob + 0.3 * pattern_bias)
+                score   = max(0, round((1.0 - blended) * 100))
+            else:
+                score = max(0, round((1.0 - pattern_bias) * 100))
+        else:
+            score = score_ml
+
+        # ── 3.  Verdict ───────────────────────────────────────────────
         if score >= 80:
             verdict = "Neutral"
         elif score >= 50:
@@ -222,33 +132,52 @@ class BiasDetector:
         else:
             verdict = "Biased Content"
 
-        findings_summary = self._generate_findings_summary(findings, category_scores)
-
         return {
-            "score": score,
+            "score":   score,
             "verdict": verdict,
-            "findings": findings_summary,
+            "findings": self._summary(findings, explicit_findings),
             "details": {
-                "total_indicators": len(findings),
-                "category_scores": dict(category_scores),
-                "findings_list": findings[:10]
+                "ml_used":           self._ml_ready,
+                "model":             "Logistic Regression (WinoBias + StereoSet)" if self._ml_ready else "Rule-based fallback",
+                "explicit_patterns": len(explicit_findings),
+                "findings_list":     findings[:10],
             }
         }
 
-    def _generate_findings_summary(self, findings: List[Dict], category_scores: Dict) -> str:
+    # ──────────────────────────────────────────────────────────────────
+    def _ml_predict(self, text: str) -> float:
+        """Return bias probability from trained Logistic Regression."""
+        X    = self._vectorizer.transform([text])
+        prob = self._model.predict_proba(X)[0]
+        # Class 1 = biased
+        return float(prob[1]) if len(prob) > 1 else float(prob[0])
+
+    def _check_explicit(self, text: str):
+        findings  = []
+        severities = []
+        for pattern, label, weight in self._explicit_patterns:
+            matches = pattern.findall(text)
+            for m in matches:
+                findings.append({
+                    "type":     "explicit_pattern",
+                    "category": label,
+                    "match":    (m if isinstance(m, str) else " ".join(m))[:60],
+                    "severity": weight,
+                })
+                severities.append(weight)
+        avg_sev = sum(severities) / len(severities) if severities else 0.0
+        return findings, avg_sev
+
+    def _summary(self, findings: List[Dict], explicit: List[Dict]) -> str:
         if not findings:
             return "No significant bias indicators detected. Content appears neutral and balanced."
         parts = []
-        total = len(findings)
-        categories_found = set(f.get("category") for f in findings)
-        if "gender" in categories_found:
-            parts.append("gender-related bias patterns")
-        if "racial" in categories_found:
-            parts.append("racial/ethnic bias indicators")
-        if "ideological" in category_scores and category_scores["ideological"] > 0.2:
-            parts.append("ideological language")
-        if any(f["type"] == "toxicity" for f in findings):
-            parts.append("toxic language patterns")
-        if parts:
-            return f"Detected {total} bias indicator(s): {', '.join(parts)}."
-        return f"Detected {total} minor bias indicator(s) that may affect content neutrality."
+        if self._ml_ready:
+            ml_f  = [f for f in findings if f["type"] == "ml_classifier"]
+            if ml_f:
+                prob = ml_f[0]["bias_probability"]
+                parts.append(f"ML classifier bias probability: {prob:.0%}")
+        if explicit:
+            cats = set(f["category"] for f in explicit)
+            parts.append(f"Explicit patterns: {', '.join(cats)}")
+        return "; ".join(parts).capitalize() + "." if parts else "Bias indicators present."
